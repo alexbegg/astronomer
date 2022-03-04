@@ -23,9 +23,17 @@ Return the list of peers in a NATS Streaming cluster.
 {{ print $replicas }}
 {{- end -}}
 
+{{ define "stan-exporter.image" -}}
+{{- if .Values.global.privateRegistry.enabled -}}
+{{ .Values.global.privateRegistry.repository }}/ap-nats-exporter:{{ .Values.images.exporter.tag }}
+{{- else -}}
+{{ .Values.images.exporter.repository }}:{{ .Values.images.exporter.tag }}
+{{- end }}
+{{- end }}
+
 {{ define "stan.image" -}}
 {{- if .Values.global.privateRegistry.enabled -}}
-{{ .Values.global.privateRegistry.repository }}/ap-stan:{{ .Values.images.stan.tag }}
+{{ .Values.global.privateRegistry.repository }}/ap-nats-streaming:{{ .Values.images.stan.tag }}
 {{- else -}}
 {{ .Values.images.stan.repository }}:{{ .Values.images.stan.tag }}
 {{- end }}
@@ -38,3 +46,28 @@ Return the list of peers in a NATS Streaming cluster.
 {{ .Values.images.init.repository }}:{{ .Values.images.init.tag }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return  the proper Storage Class
+*/}}
+{{- define "stan.storageClass" -}}
+{{/*
+Helm 2.11 supports the assignment of a value to a variable defined in a different scope,
+but Helm 2.9 and 2.10 does not support it, so we need to implement this if-else logic.
+*/}}
+{{- if .Values.global.storageClass -}}
+    {{- if (eq "-" .Values.global.storageClass) -}}
+        {{- printf "storageClassName: \"\"" -}}
+    {{- else }}
+        {{- printf "storageClassName: %s" .Values.global.storageClass -}}
+    {{- end -}}
+{{- else -}}
+    {{- if .Values.store.volume.storageClass -}}
+          {{- if (eq "-" .Values.store.volume.storageClass) -}}
+              {{- printf "storageClassName: \"\"" -}}
+          {{- else }}
+              {{- printf "storageClassName: %s" .Values.store.volume.storageClass -}}
+          {{- end -}}
+    {{- end -}}
+{{- end -}}
+{{- end -}}

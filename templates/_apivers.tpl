@@ -1,10 +1,20 @@
 {{/*
 Generic Kubernetes apiVersion helpers
 
-Add any definitions at the version they are introduced to the API. EG: do not use v1beta1 if v1 exists.
-Delete definitions at the version they are deleted from the API.
-Delete logic related to unsupported versions of kubernetes. EG: https://www.astronomer.io/docs/enterprise/v0.25/resources/version-compatibility-reference
+Add any definitions at the version they are introduced to the API. EG: do not use v1beta1 by
+default if v1 exists. A feature flag may be added to use the older version.
+
+Delete definitions here when Astronomer no longer supports the k8s version that dropped support
+for that version of the API.
+EG: https://www.astronomer.io/docs/enterprise/v0.25/resources/version-compatibility-reference
 */}}
+
+{{- define "apiVersion.PodDisruptionBudget" -}}
+{{- if or (semverCompare "<1.21-0" .Capabilities.KubeVersion.Version) (.Values.global.useLegacyPodDisruptionBudget) -}}
+policy/v1beta1
+{{- else -}}
+policy/v1
+{{- end -}}{{- end -}}
 
 {{- define "apiVersion.DaemonSet" -}}
 apps/v1
@@ -43,10 +53,10 @@ batch/v1
 {{- end -}}
 
 {{- define "apiVersion.batch.cronjob" -}}
-{{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.Version -}}
-batch/v1
-{{- else -}}
+{{- if or (semverCompare "<1.21-0" .Capabilities.KubeVersion.Version) (.Values.global.useLegacyBatchCronJob) -}}
 batch/v1beta1
+{{- else -}}
+batch/v1
 {{- end -}}
 {{- end -}}
 

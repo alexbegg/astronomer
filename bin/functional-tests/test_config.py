@@ -2,10 +2,8 @@
 """
 This file is for system testing the Astronomer Helm chart.
 
-Testinfra is used to create test fixtures.
-
-testinfra simplifies and provides syntactic sugar for doing
-execs into a running pods.
+Many of these tests use pytest fixtures that use testinfra to exec
+into running pods so we can inspect the run-time environment.
 """
 
 import json
@@ -54,13 +52,13 @@ def test_houston_config(houston_api):
 
 
 def test_houston_can_reach_prometheus(houston_api):
-    houston_api.check_output(
+    assert houston_api.check_output(
         "wget -qO- --timeout=1 http://astronomer-prometheus.astronomer.svc.cluster.local:9090/targets"
     )
 
 
 def test_nginx_can_reach_default_backend(nginx):
-    nginx.check_output(
+    assert nginx.check_output(
         "curl -s --max-time 1 http://astronomer-nginx-default-backend:8080"
     )
 
@@ -154,12 +152,11 @@ def test_prometheus_config_reloader_works(prometheus, kube_client):
         print(f"Exception when calling CoreV1Api->patch_namespaced_config_map: {e}\n")
 
     # This can take more than a minute.
-    for i in range(12):
+    for _ in range(12):
         data = prometheus.check_output(
             "wget -qO- http://localhost:9090/api/v1/status/config"
         )
         j_parsed = json.loads(data)
-        # print(parsed['data']['yaml']['config']['global'])
         y_parsed = yaml.safe_load(j_parsed["data"]["yaml"])
         if y_parsed["global"]["scrape_interval"] != "30s":
             print(y_parsed["global"]["scrape_interval"])
@@ -242,3 +239,24 @@ def test_houston_backend_secret_present_after_helm_upgrade_and_container_restart
     assert (
         "postgres" in result
     ), "Expected to find DB connection string after Houston restart"
+
+
+def test_cve_2021_44228_es_client(es_client):
+    """Ensure the running es process has -Dlog4j2.formatMsgNoLookups=true configured."""
+    assert "-Dlog4j2.formatMsgNoLookups=true" in es_client.check_output(
+        "/usr/share/elasticsearch/jdk/bin/jps -lv"
+    )
+
+
+def test_cve_2021_44228_es_data(es_data):
+    """Ensure the running es process has -Dlog4j2.formatMsgNoLookups=true configured."""
+    assert "-Dlog4j2.formatMsgNoLookups=true" in es_data.check_output(
+        "/usr/share/elasticsearch/jdk/bin/jps -lv"
+    )
+
+
+def test_cve_2021_44228_es_master(es_master):
+    """Ensure the running es process has -Dlog4j2.formatMsgNoLookups=true configured."""
+    assert "-Dlog4j2.formatMsgNoLookups=true" in es_master.check_output(
+        "/usr/share/elasticsearch/jdk/bin/jps -lv"
+    )

@@ -1,6 +1,6 @@
-#################################
+##################################
 ## Astronomer global configuration
-#################################
+##################################
 global:
   # Base domain for all subdomains exposed through ingress
   baseDomain: ~
@@ -19,6 +19,11 @@ global:
   privateCaCertsAddToHost:
     enabled: false
     hostDirectory: /etc/docker/certs.d
+    certCopier:
+      repository: alpine
+      tag: 3.14
+      pullPolicy: IfNotPresent
+
 
   # Use kube-lego
   acme: false
@@ -34,6 +39,12 @@ global:
 
   # Single namespace mode
   singleNamespace: false
+
+  # Use cluster roles
+  clusterRoles: true
+
+  # Enables kubed
+  kubedEnabled: true
 
   # Enables necessary components for compatibility with Istio Service Mesh
   istio:
@@ -58,6 +69,9 @@ global:
   # Used to enable Celery autoscaling
   kedaEnabled: false
 
+  # make fluentd to gather logs from all avaialble namespaces
+  manualNamespaceNamesEnabled: false
+
   # Used to enable nats-server
   nats:
     enabled: true
@@ -76,6 +90,9 @@ global:
 
   # Enable security context constraints required for OpenShift
   sccEnabled: false
+
+  # Enables namespace labels for network policies
+  networkNSLabels: false
 
   # Deploy auth sidecar to use openshift native features
   authSidecar:
@@ -136,6 +153,18 @@ global:
     resources:
       limits: {}
       requests: {}
+
+  # External ES logging
+  customLogging:
+    enabled: false
+    scheme: https
+    host: ""
+    port: ""
+    secret: ""
+    #secretName: ~
+    #awsSecretName: ~
+    #awsIAMRole: ~
+    #awsServiceAccountAnnotation: ~
 
   ## Add annotations to all the auth sidecar deployed ingress resources
   ##
@@ -258,6 +287,8 @@ astronomer:
         cpu: "500m"
         memory: "1024Mi"
 
+  # podLabels: {}
+
 #################################
 ## Nginx configuration
 #################################
@@ -299,6 +330,22 @@ grafana:
     #   velero:
     #     file: dashboards/velero.json
 
+  # provide extra configurations to grafana via environment variables
+  extraEnvVars:
+    []
+    # - name: GF_SMTP_ENABLED
+    #   value: "true"
+    # - name: GF_SMTP_HOST
+    #   value: smtp.astronomer.io
+    # - name: GF_SMTP_USER
+    #   value: grafana
+    # - name: GF_SMTP_PASSWORD
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: grafana-smtp-secret
+    #       key: smtp_password
+
+
 #################################
 ## Prometheus configuration
 #################################
@@ -336,9 +383,9 @@ keda:
 nats:
   nodeSelector:
     <<: *platformNodeSelector
-    affinity:
-      <<: *platformAffinity
-    tolerations: *platformTolerations
+  affinity:
+    <<: *platformAffinity
+  tolerations: *platformTolerations
   resources:
     requests:
       cpu: "75m"
@@ -350,9 +397,9 @@ nats:
 stan:
   nodeSelector:
     <<: *platformNodeSelector
-    affinity:
-      <<: *platformAffinity
-    tolerations: *platformTolerations
+  affinity:
+    <<: *platformAffinity
+  tolerations: *platformTolerations
   resources:
     requests:
       cpu: "75m"
@@ -476,7 +523,7 @@ kibana:
 #################################
 ## Kube State configuration
 #################################
-kubeState:
+kube-state:
   # Configure resources
   resources:
     requests:
