@@ -172,8 +172,12 @@ global:
       proxy_cookie_path                       off;
       proxy_redirect                          off;
     resources:
-      limits: {}
-      requests: {}
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1024Mi"
 
   # External ES logging
   customLogging:
@@ -234,6 +238,22 @@ global:
   # ServiceAccounts, ClusterRoles, RoleBindings, ClusterRoleBindings
   # https://github.com/argoproj/argo-cd/blob/master/docs/user-guide/sync-waves.md
   enableArgoCDAnnotation: false
+
+  # For now we support only pgbouncer with gss api support
+  pgbouncer:
+    enabled: false
+    gssSupport: true
+    krb5ConfSecretName: krb5.conf
+    # we use it only for in cluster postgresql
+    # so we can override astronomer-bootstrap secret
+    username: postgres
+    password: postgres
+    servicePort: "5432"
+    extraEnv: []
+      # some: thing
+      # another: thing
+    extraLabels: []
+      # do-funky-injection: maybe
 
 #################################
 ## Default tagged groups enabled
@@ -330,6 +350,15 @@ nginx:
   # Dict of arbitrary annotations to add to the nginx ingress
   ingressAnnotations: {}
 
+  defaultBackend:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "50Mi"
+      limits:
+        cpu: "120m"
+        memory: "100Mi"
+
 #################################
 ## Grafana configuration
 #################################
@@ -387,19 +416,30 @@ prometheus:
       cpu: "2000m"
       memory: "8Gi"
 
+  configMapReloader:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 25Mi
+      requests:
+        cpu: 100m
+        memory: 25Mi
+
 nats:
   nodeSelector:
     <<: *platformNodeSelector
   affinity:
     <<: *platformAffinity
   tolerations: *platformTolerations
-  resources:
-    requests:
-      cpu: "75m"
-      memory: "30Mi"
-    limits:
-      cpu: "250m"
-      memory: "100Mi"
+
+  nats:
+    resources:
+      requests:
+        cpu: "75m"
+        memory: "30Mi"
+      limits:
+        cpu: "250m"
+        memory: "100Mi"
 
 stan:
   nodeSelector:
@@ -407,13 +447,24 @@ stan:
   affinity:
     <<: *platformAffinity
   tolerations: *platformTolerations
-  resources:
-    requests:
-      cpu: "75m"
-      memory: "30Mi"
-    limits:
-      cpu: "250m"
-      memory: "100Mi"
+
+  init:
+    resources:
+      requests:
+        cpu: "75m"
+        memory: "30Mi"
+      limits:
+        cpu: "250m"
+        memory: "100Mi"
+
+  stan:
+    resources:
+      requests:
+        cpu: "75m"
+        memory: "30Mi"
+      limits:
+        cpu: "250m"
+        memory: "100Mi"
 
 #################################
 ## Blackbox Exporter configuration
@@ -458,6 +509,15 @@ elasticsearch:
 
   # Configure client nodes
   client:
+
+    initResources:
+      limits:
+        cpu: "120m"
+        memory: "100Mi"
+      requests:
+        cpu: "100m"
+        memory: "80Mi"
+
     # Match resources.requests.memory
     heapMemory: "2g"
 
@@ -471,6 +531,15 @@ elasticsearch:
 
   # Configure data nodes
   data:
+
+    initResources:
+      limits:
+        cpu: "120m"
+        memory: "100Mi"
+      requests:
+        cpu: "100m"
+        memory: "80Mi"
+
     # Match resources.requests.memory
     heapMemory: "2g"
 
@@ -487,6 +556,15 @@ elasticsearch:
 
   # Configure master nodes
   master:
+
+    initResources:
+      limits:
+        cpu: "120m"
+        memory: "100Mi"
+      requests:
+        cpu: "100m"
+        memory: "80Mi"
+
     # Match resources.requests.memory
     heapMemory: "2g"
 
@@ -500,6 +578,24 @@ elasticsearch:
 
     persistence:
       size: "20Gi"
+
+  exporter:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+
+  nginx:
+    resources:
+      requests:
+        cpu: "80m"
+        memory: "7Mi"
+      limits:
+        cpu: "100m"
+        memory: "10Mi"
 
 #################################
 ## Kibana configuration
